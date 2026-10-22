@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible defect with synthetic inputs
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Include expected and observed behavior (no personal records).
+    validations:
+      required: true
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Synthetic reproducer
+      description: Minimal query, candidate and code, with synthetic company names.
+      render: javascript
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Node.js and library version

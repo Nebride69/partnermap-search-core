@@ -1,0 +1,18 @@
+name: Feature request
+description: Suggest a narrow, reusable Turkish-language search improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Use case
+      description: What generic language/search problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Expected input/output and safety considerations
+      description: Provide synthetic examples, and note possible false positives.
+    validations:
+      required: true
