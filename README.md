@@ -10,6 +10,17 @@ General-purpose search commonly misses Turkish-language variations: `İ/i`, `I/�
 
 Originally extracted and generalized from the search utilities maintained for [PartnerMap](https://www.partnermap.net), a Turkish technology brand/partner directory. This library is maintained separately and can be used by other projects. The **live website's record counts do not represent this library's downloads or external adoption**.
 
+## First-party production use (verified 23 October 2026)
+
+This library's **name normalization and typo-rescue utilities** are used in [PartnerMap](https://www.partnermap.net), a live technology brand/partner directory. The application imports an **exact, MIT-licensed source snapshot from the public `v0.1.0` tag** inside its private codebase. The app does **not** install this library from npm; authorization, Supabase queries, rate limiting and result publication remain in the host application.
+
+Public read-only demonstrations on the production search API (checked 23 October 2026):
+
+- [`paloalto` → `Palo Alto Networks`](https://www.partnermap.net/api/search?q=paloalto&type=vendor&page=1) (spacing-insensitive name matching).
+- [`fortniet` → `Fortinet`](https://www.partnermap.net/api/search?q=fortniet&type=vendor&page=1) (bounded typo rescue).
+
+These endpoint examples may change as the website evolves. They establish **first-party production integration**, not third-party developer adoption, npm downloads, or unique visitors. The full PartnerMap application and its proprietary datasets remain private.
+
 ## Features
 
 | Function | Purpose |
