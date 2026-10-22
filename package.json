@@ -1,0 +1,46 @@
+{
+  "name": "@partnermap/turkish-entity-search",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Zero-runtime-dependency Turkish entity search normalization, bounded typo matching, and partner-intent parsing",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "example": "npm run build && node examples/quickstart.mjs",
+    "hygiene": "node scripts/hygiene-check.mjs",
+    "verify": "npm test && npm run hygiene",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "turkish",
+    "search",
+    "unicode",
+    "fuzzy",
+    "entity-search",
+    "partner-intent",
+    "b2b",
+    "types"
+  ]
+}
