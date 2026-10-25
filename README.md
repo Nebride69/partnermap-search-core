@@ -1,95 +1,116 @@
 # Turkish Entity Search
 
-![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-339933) ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+**Turkish-aware name matching for search, suggestions and partner discovery.**
 
-Turkish-aware normalization, conservative typo ranking, and business-partner search intent parsing for **already-authorized** entity names. Pure TypeScript, zero runtime dependencies, framework-agnostic.
+Small, predictable TypeScript utilities for handling Turkish letter variants, spacing differences, common typos and phrases such as **“Fortinet Türkiye partnerleri”**. Designed for applications that already have an authorized list of searchable names.
 
-## The problem
+[![CI](https://github.com/Nebride69/partnermap-search-core/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Nebride69/partnermap-search-core/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Nebride69/partnermap-search-core?label=release)](https://github.com/Nebride69/partnermap-search-core/releases)
+[![MIT License](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
+[![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-339933)](package.json)
 
-General-purpose search commonly misses Turkish-language variations: `İ/i`, `I/ı`, punctuation, spacing (`paloalto` vs. `Palo Alto`), small typos, and specific phrasing such as `Fortinet Türkiye partnerleri`. This library offers bounded, predictable helpers for search suggestions and display ranking. It does **not** connect to a database or discover private records.
+**[Türkçe dokümantasyon](README.tr.md)** · [Quick start](#quick-start) · [Live examples](#verified-first-party-use) · [Examples & recipes](docs/EXAMPLES.md) · [Contribute](CONTRIBUTING.md) · [Security](SECURITY.md)
 
-Originally extracted and generalized from the search utilities maintained for [PartnerMap](https://www.partnermap.net), a Turkish technology brand/partner directory. This library is maintained separately and can be used by other projects. The **live website's record counts do not represent this library's downloads or external adoption**.
+---
 
-## First-party production use (verified 23 October 2026)
+## Why this exists
 
-This library's **name normalization and typo-rescue utilities** are used in [PartnerMap](https://www.partnermap.net), a live technology brand/partner directory. The application imports an **exact, MIT-licensed source snapshot from the public `v0.1.0` tag** inside its private codebase. The app does **not** install this library from npm; authorization, Supabase queries, rate limiting and result publication remain in the host application.
+Turkish-language directory search breaks when a query uses a different spelling or is slightly misspelled:
 
-Public read-only demonstrations on the production search API (checked 23 October 2026):
+| User types | Reference name | Library behavior |
+| --- | --- | --- |
+| `paloalto` | `Palo Alto Networks` | Spacing-insensitive prefix match |
+| `fortnet` | `Fortinet` | Conservative one-edit suggestion |
+| `İŞ ÇÖZÜMLERİ` | `İş Çözümleri` | Turkish-aware normalization |
+| `Cisco bayileri?` | `Cisco` | Partner/reseller intent extraction |
+| `EDR` | `EDR Solutions` | No fuzzy typo rescue for short query |
 
-- [`paloalto` → `Palo Alto Networks`](https://www.partnermap.net/api/search?q=paloalto&type=vendor&page=1) (spacing-insensitive name matching).
-- [`fortniet` → `Fortinet`](https://www.partnermap.net/api/search?q=fortniet&type=vendor&page=1) (bounded typo rescue).
+**The library suggests and ranks names; it does not search your database or grant access to records.** The calling application is responsible for authorization, publication filters and rate limiting.
 
-These endpoint examples may change as the website evolves. They establish **first-party production integration**, not third-party developer adoption, npm downloads, or unique visitors. The full PartnerMap application and its proprietary datasets remain private.
+## Quick start
 
-## Features
+**Requirements:** Node.js 20+ · TypeScript is a development dependency · **zero runtime dependencies**.
 
-| Function | Purpose |
-|---|---|
-| `compactSearchName(name)` | Locale-aware lowercase, Unicode normalization, punctuation folding |
-| `findNameRescueEvidence(candidate, query)` | Exact/prefix/bounded typo matching with relative scores |
-| `rankNames(query, permittedCandidates, getName, limit?)` | Score up to 500 records **provided by the caller** |
-| `parsePartnerIntent(query)` | Extract vendor name from Turkish reseller/partner phrases |
-| `slugifyTr(name)` | Normalize Turkish names into SEO-friendly URL segments |
-
-## Quickstart (clone this repository)
-
-Node.js 20 or later required. `npm install` installs the **development-only** TypeScript compiler; the built package has **no runtime dependencies**.
+The library is currently distributed as **source on GitHub**, not as an npm package.
 
 ```bash
+git clone https://github.com/Nebride69/partnermap-search-core.git
+cd partnermap-search-core
 npm install
 npm test
 npm run example
 ```
 
-```ts
+After building, use the generated `dist/index.js`:
+
+```js
 import { compactSearchName, rankNames, parsePartnerIntent } from './dist/index.js';
 
 const query = 'Palo Alto Türkiye partnerleri';
 const { lookupQuery } = parsePartnerIntent(query);
+
 const publishedAndAuthorized = [
   { name: 'Palo Alto Networks' },
-  { name: 'Cisco' },
+  { name: 'Cisco' }
 ];
-const candidates = rankNames(lookupQuery, publishedAndAuthorized, x => x.name);
-console.log(compactSearchName('Palo Alto')); // 'paloalto'
-console.log(candidates[0]?.item.name);        // 'Palo Alto Networks'
+
+const suggestions = rankNames(
+  lookupQuery,
+  publishedAndAuthorized,
+  item => item.name
+);
+
+console.log(compactSearchName('Palo Alto')); // "paloalto"
+console.log(suggestions[0]?.item.name); // "Palo Alto Networks"
 ```
 
-**Distribution status:** Source repository only for now; this library is **not yet published to npm**. Do not run `npm install @partnermap/turkish-entity-search` until an npm release is explicitly announced. After cloning and building, the library can be imported from `dist/`.
+For more copyable recipes, see **[Examples & recipes](docs/EXAMPLES.md)**.
 
-## Safe integration
+> **Package status:** The name `@partnermap/turkish-entity-search` appears in `package.json`, but **no npm publication is claimed**. Do not attempt to install it from npm until a separate release is announced.
 
-1. Query the **host application's own database**, enforcing its authorization, row-level security, and publication filters.
-2. Pass only those filtered candidates to this library.
-3. Return multiple matches as suggestions. Do not silently redirect to an approximate match as though it were exact.
-4. Apply request-level input limits, rate limiting, and authorization separately. This library is not a substitute.
+## What is included?
 
-The scores (1.24, 1.13, 1.06, 0.99) are **ranking hints, not probabilities**. False positives can occur on short/common prefixes. Names longer than 160 Unicode code points and queries longer than 128 are deliberately rejected; caller-supplied candidate limit is capped at 500. Short normalized queries (<4 characters) are not fuzzy-matched.
+| Public API | Purpose |
+| --- | --- |
+| `compactSearchName(name)` | Turkish-aware casing and Unicode normalization for name comparison |
+| `findNameRescueEvidence(name, query)` | Exact, prefix and bounded typo-match evidence |
+| `rankNames(query, candidates, getName, limit?)` | Rank **caller-provided, authorized** candidates |
+| `parsePartnerIntent(query)` | Detect Turkish partner, reseller and dealer phrasing |
+| `slugifyTr(name)` | Create Turkish-friendly URL segments, **not** unique security identifiers |
 
-## Example inputs
+### Where the library fits
 
-| Input | Expected behavior |
-|---|---|
-| `paloalto` + `Palo Alto Networks` | Prefix match |
-| `fortnet` + `Fortinet` | One-edit typo match |
-| `Cisco bayileri?` | Partner intent; lookup query `Cisco` |
-| `İş Çözümleri` | Normalizes to `iscozumleri` |
-| `EDR` | No fuzzy typo rescue (too short) |
-
-## Development and maintenance
-
-```bash
-npm install
-npm run build
-npm test
-npm run example
-npm run verify
+```mermaid
+flowchart LR
+    A["Search request"] --> B["Application authorization and publication filters"]
+    B --> C["Allowed candidate names"]
+    C --> D["Turkish Entity Search: normalize and rank"]
+    D --> E["Suggestions shown by application"]
 ```
 
-GitHub Actions CI checks TypeScript build, tests and a simple file/credential hygiene gate on pull requests. **The hygiene gate is not a replacement for GitHub secret scanning or a full security review.** See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md), and [docs/ROADMAP.md](docs/ROADMAP.md).
+The application owns authentication, Supabase/database access, eligibility and request-rate controls. The library only processes candidate strings that the application explicitly supplies.
 
-We welcome reproducible Turkish-language edge cases, regression tests, accessibility improvements and realistic performance benchmarks with synthetic data.
+Matching scores (`1.24`, `1.13`, `1.06`, `0.99`) are **ranking signals, not probabilities**. Short queries (fewer than four normalized characters) cannot trigger fuzzy typo rescue. Candidate names over 160 Unicode code points, queries over 128 code points and candidate lists beyond the library's 500-record cap are bounded.
 
-## License / origin
+## Verified first-party use
 
-MIT, see [LICENSE](LICENSE). Source implementation was adapted from the PartnerMap maintainers' own helper code and generalized for independent use. This repository does **not** include PartnerMap's application/backend, customer records, Supabase migrations, credentials, admin routes or proprietary enrichment datasets. PartnerMap remains a separate private application.
+**PartnerMap Search Core is used by [PartnerMap](https://www.partnermap.net), a live B2B technology brand/partner directory.** The commercial application uses a pinned, MIT-licensed **source copy** from the public [`v0.1.0` release](https://github.com/Nebride69/partnermap-search-core/releases/tag/v0.1.0), not an npm dependency.
+
+These read-only production examples were checked on 23 October 2026:
+
+- **[`paloalto` → Palo Alto Networks](https://www.partnermap.net/api/search?q=paloalto&type=vendor&page=1)** — spacing-insensitive prefix matching.
+- **[`fortniet` → Fortinet](https://www.partnermap.net/api/search?q=fortniet&type=vendor&page=1)** — typo-tolerant name rescue.
+
+The API responses may change as the directory evolves. This is **first-party production integration, not evidence of third-party adoption, npm downloads or unique visitors**. The private PartnerMap application, unpublished datasets, authentication and database migrations are not in this repository.
+
+## Contributing and project status
+
+- **Contributions:** Read [CONTRIBUTING.md](CONTRIBUTING.md). Submit reproducible, **synthetic** examples through [Issues](https://github.com/Nebride69/partnermap-search-core/issues/new/choose).
+- **Security:** Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). Do not publish tokens, customer records or private queries.
+- **Compatibility:** See [tests](test/search.test.mjs), [CI](https://github.com/Nebride69/partnermap-search-core/actions/workflows/ci.yml) and [CHANGELOG](CHANGELOG.md).
+- **Roadmap:** [What is done and what is next](docs/ROADMAP.md).
+- **Release:** [v0.1.0](https://github.com/Nebride69/partnermap-search-core/releases/tag/v0.1.0), the initial public release. The package is young and does **not yet claim verified external adoption**.
+
+## License and origin
+
+MIT license — [LICENSE](LICENSE). This library generalizes matching helpers originally developed for PartnerMap, while remaining a **separate public open-source project**. Its source does not include PartnerMap's private backend, Supabase credentials, customer information or proprietary enrichment records.
